@@ -4,7 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "start": "PORT=3003 parcel src/index.html src/index.ts --open",
+    "start": "PORT=3003 parcel src/index.html src/index.js --open",
     "build": "parcel build src/index.html"
   },
   "devDependencies": {
@@ -15,6 +15,7 @@
     "@types/chart.js": "2.9.32",
     "@types/date-fns": "^2.6.0",
     "chart.js": "2.9.4",
-    "date-fns": "^2.21.3"
+    "date-fns": "^2.21.3",
+    "querystring": "^0.2.1"
   }
 }

@@ -1,11 +1,13 @@
 import { Chart, ChartData } from 'chart.js';
 import {
   format,
+  parseISO,
   Interval,
   eachDayOfInterval,
   isSameDay,
   eachWeekendOfInterval,
 } from 'date-fns';
+import querystring from 'querystring';
 
 declare global {
   interface Window {
@@ -13,47 +15,12 @@ declare global {
   }
 }
 
-const START_DAY = new Date(2021, 5, 1);
-const END = new Date(2021, 5, 14);
-const TOTAL_SP = 22;
-
-const SP_COMPLETED = {
-  '2021/5/1': 0,
-  '2021/5/2': 0,
-  '2021/5/3': 3,
-  '2021/5/4': 5,
-  '2021/5/5': 5,
-  '2021/5/6': 5,
-  '2021/5/7': 7,
-  '2021/5/8': 7,
-  '2021/5/9': 15,
-  '2021/5/10': 15,
-  '2021/5/11': 15,
-  '2021/5/12': 20,
-  '2021/5/13': 20,
-  '2021/5/14': 22,
-};
-
-const getIdealDataset = (sprintInterval: Interval, totalSp: number) => {
-  const days = eachDayOfInterval(sprintInterval);
-  const weekends = eachWeekendOfInterval(sprintInterval);
-  const weekdaysNumber = days.length - 1 - weekends.length;
-
-  const idealSPPerDay = totalSp / weekdaysNumber;
-
-  let left = totalSp;
-  return days.map((day, index) => {
-    if (index === 0) {
-      return left;
-    }
-    if (!weekends.some((weekend) => isSameDay(weekend, day))) {
-      left -= idealSPPerDay;
-
-      return left;
-    }
-    return left;
-  });
-};
+interface SprintPerformance {
+  startDate: string;
+  endDate: string;
+  totalStoryPoints: number;
+  performanceByDay: Record<string, number>;
+}
 
 window.renderPerformance = (containerId: string) => {
   const container = document.getElementById(containerId);
@@ -71,36 +38,99 @@ window.renderPerformance = (containerId: string) => {
     return null;
   }
 
-  const burndownData: ChartData = {
-    labels: Object.keys(SP_COMPLETED).map((dateStr) =>
-      format(new Date(dateStr), 'EEE d')
-    ),
-    datasets: [
-      {
-        lineTension: 0,
-        borderColor: '#FC8181',
-        fill: false,
-        data: Object.values(SP_COMPLETED).map(
-          (completed) => TOTAL_SP - completed
-        ),
-      },
-      {
-        lineTension: 0,
-        borderColor: '#63B3ED',
-        fill: false,
-        data: getIdealDataset({ start: START_DAY, end: END }, TOTAL_SP),
-      },
-    ],
+  const fetchSprintInPathPerformance = async () => {
+    try {
+      const path = location.pathname;
+
+      const pathChunks = path.split('/').filter((chunk) => chunk);
+
+      console.log(pathChunks);
+
+      const owner = pathChunks[0];
+      const repo = pathChunks[1];
+      const _id = pathChunks[3];
+      const sprintPerformance = await fetch(
+        `http://localhost:4000/sprint-performance?${querystring.stringify({
+          owner,
+          repo,
+          _id,
+        })}`
+      );
+      return (await sprintPerformance.json()) as SprintPerformance;
+    } catch (e) {
+      console.log(e);
+    }
   };
 
-  new Chart(ctx, {
-    type: 'line',
-    data: burndownData,
-    options: {
-      legend: {
-        display: false,
+  const getIdealDataset = (sprintInterval: Interval, totalSp: number) => {
+    const days = eachDayOfInterval(sprintInterval);
+    const weekends = eachWeekendOfInterval(sprintInterval);
+    const weekdaysNumber = days.length - 1 - weekends.length;
+
+    const idealSPPerDay = totalSp / weekdaysNumber;
+
+    let left = totalSp;
+    return days.map((day, index) => {
+      if (index === 0) {
+        return left;
+      }
+      if (!weekends.some((weekend) => isSameDay(weekend, day))) {
+        left -= idealSPPerDay;
+
+        return left;
+      }
+      return left;
+    });
+  };
+
+  const drawChart = ({
+    endDate,
+    startDate,
+    performanceByDay,
+    totalStoryPoints,
+  }: SprintPerformance) => {
+    const burndownData: ChartData = {
+      labels: Object.keys(performanceByDay).map((dateStr) =>
+        format(parseISO(dateStr), 'EEE d')
+      ),
+      datasets: [
+        {
+          lineTension: 0,
+          borderColor: '#FC8181',
+          fill: false,
+          data: Object.values(performanceByDay).map(
+            (completed) => totalStoryPoints - completed
+          ),
+        },
+        {
+          lineTension: 0,
+          borderColor: '#63B3ED',
+          fill: false,
+          data: getIdealDataset(
+            { start: new Date(startDate), end: new Date(endDate) },
+            totalStoryPoints
+          ),
+        },
+      ],
+    };
+
+    new Chart(ctx, {
+      type: 'line',
+      data: burndownData,
+      options: {
+        scales: { yAxes: [{ ticks: { min: 0, precision: 0 } }] },
+        legend: {
+          display: false,
+        },
       },
-    },
+    });
+  };
+
+  window.addEventListener('on-sprint-page', async () => {
+    const sprintPerformance = await fetchSprintInPathPerformance();
+    if (sprintPerformance) {
+      drawChart(sprintPerformance);
+    }
   });
 };
 
