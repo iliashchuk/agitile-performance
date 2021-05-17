@@ -1,4 +1,4 @@
-import { Chart, ChartData, ChartOptions } from 'chart.js';
+import { Chart, ChartData } from 'chart.js';
 import {
   format,
   Interval,
@@ -6,6 +6,12 @@ import {
   isSameDay,
   eachWeekendOfInterval,
 } from 'date-fns';
+
+declare global {
+  interface Window {
+    renderPerformance(containerId: string): void;
+  }
+}
 
 const START_DAY = new Date(2021, 5, 1);
 const END = new Date(2021, 5, 14);
@@ -49,16 +55,17 @@ const getIdealDataset = (sprintInterval: Interval, totalSp: number) => {
   });
 };
 
-renderBurndown('chart');
+window.renderPerformance = (containerId: string) => {
+  const container = document.getElementById(containerId);
 
-function renderBurndown(elementId: string) {
-  const speedCanvas = document.getElementById(elementId) as HTMLCanvasElement;
-
-  if (!speedCanvas) {
+  if (!container) {
     return null;
   }
+  const canvas = document.createElement('canvas');
+  canvas.id = 'canvas';
+  container.appendChild(canvas);
 
-  const ctx = speedCanvas.getContext('2d');
+  const ctx = canvas.getContext('2d');
 
   if (!ctx) {
     return null;
@@ -71,7 +78,7 @@ function renderBurndown(elementId: string) {
     datasets: [
       {
         lineTension: 0,
-        borderColor: 'firebrick',
+        borderColor: '#FC8181',
         fill: false,
         data: Object.values(SP_COMPLETED).map(
           (completed) => TOTAL_SP - completed
@@ -79,7 +86,7 @@ function renderBurndown(elementId: string) {
       },
       {
         lineTension: 0,
-        borderColor: 'blue',
+        borderColor: '#63B3ED',
         fill: false,
         data: getIdealDataset({ start: START_DAY, end: END }, TOTAL_SP),
       },
@@ -95,4 +102,8 @@ function renderBurndown(elementId: string) {
       },
     },
   });
+};
+
+if (!document.getElementById('Performance-container')) {
+  window.renderPerformance('performance');
 }
