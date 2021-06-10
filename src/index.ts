@@ -17,7 +17,7 @@ window.renderPerformance = () => {
     return null;
   }
 
-  container.style = 'padding: 16px;';
+  container.setAttribute('style', 'padding: 16px;');
 
   const canvas = document.createElement('canvas');
   canvas.id = 'canvas';
@@ -37,7 +37,10 @@ window.renderPerformance = () => {
     }
   };
 
-  fetchAndDrawPerformanceChart();
+  // TODO: rewrite to handle adequately in standalone mode
+  setTimeout(fetchAndDrawPerformanceChart, 2000);
+
+  window.addEventListener('task-done', () => fetchAndDrawPerformanceChart);
 
   window.addEventListener('on-sprint-page', fetchAndDrawPerformanceChart);
 };
