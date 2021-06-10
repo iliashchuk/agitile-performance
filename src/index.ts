@@ -22,12 +22,13 @@ interface SprintPerformance {
   performanceByDay: Record<string, number>;
 }
 
-window.renderPerformance = (containerId: string) => {
-  const container = document.getElementById(containerId);
+window.renderPerformance = () => {
+  const container = document.getElementById('Performance-container');
 
   if (!container) {
     return null;
   }
+
   const canvas = document.createElement('canvas');
   canvas.id = 'canvas';
   container.appendChild(canvas);
@@ -70,11 +71,11 @@ window.renderPerformance = (containerId: string) => {
     const idealSPPerDay = totalSp / weekdaysNumber;
 
     let left = totalSp;
-    return days.map((day, index) => {
+    return days.map((day: Date, index) => {
       if (index === 0) {
         return left;
       }
-      if (!weekends.some((weekend) => isSameDay(weekend, day))) {
+      if (!weekends.some((weekend: Date) => isSameDay(weekend, day))) {
         left -= idealSPPerDay;
 
         return left;
