@@ -20,6 +20,13 @@ window.renderPerformance = () => {
   container.setAttribute('style', 'padding: 16px;');
 
   const canvas = document.createElement('canvas');
+  canvas.setAttribute(
+    'style',
+    `
+    max-width: 800px !important;
+    max-height: 400px !important;
+  `
+  );
   canvas.id = 'canvas';
   container.appendChild(canvas);
 
